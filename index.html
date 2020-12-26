@@ -1,0 +1,246 @@
+
+<html>
+<head>
+  <script language="javascript">
+    var master,projectile,target,score,initvars;
+    var time,moving=false,targetMoving=false;
+    var initialVelocity,angle;
+    var success=0,fail=0,direction=1;
+    var theta,targetPosX,targetPosX;
+    var originX,originY;
+    var g = 6, mu = 0.8;
+    window.onload = function()
+    {
+      master = document.getElementById("master");
+      projectile = document.getElementById('projectile');
+      target = document.getElementById('target');
+      score = document.getElementById('score');
+      initvars = document.getElementById('initvars');
+      master.style.height = screen.height * 0.657;
+      master.style.width = screen.width * 0.95;
+      randomizeTarget();
+      awaitProjection();
+      score.innerHTML = '<span style="font-size:30pt;font-family:Courier New;">0%</span><br>'+success+'/'+(success+fail);
+      initvars.title = '80,'+Math.PI/4;
+      initvars.innerHTML = 'Angle: 45<br>' + 'Speed: 80';
+    }
+    function place(imgObj,x,y)
+    {
+      if(imgObj.id=='target')
+      {
+        if
+        (
+          x > parseInt(master.style.width)-parseInt(imgObj.width)/2 ||
+          x < parseInt(imgObj.width)/2 ||
+          y > parseInt(master.style.height)-parseInt(imgObj.height)/2 ||
+          y < parseInt(imgObj.height)/2
+        )
+        {
+          return false;
+        }
+      }
+      else if(imgObj.id=='projectile')
+      {
+        if(y >= parseInt(master.style.height)-parseInt(imgObj.height)/2)
+        {
+          var vx = initialVelocity * Math.cos(angle);
+          var vy = mu*(g*time - initialVelocity * Math.sin(angle));
+          if(vy<=0)
+          {
+            angle = Math.atan(vy/vx);
+            initialVelocity = vx/Math.abs(vx) * Math.sqrt(vx*vx+vy*vy);
+            time = 0;
+            originX = x;
+            originY = y;
+          }
+          return null;
+        }
+        else if(y <= parseInt(imgObj.height)/2)
+        {
+          var vx = 0.99 * initialVelocity * Math.cos(angle);
+          var vy = mu*(g*time - initialVelocity * Math.sin(angle));
+          if(Math.abs(Math.round(vx))==4 && Math.round(vy)==0)
+          {
+            imgObj.style.left = 0;
+            imgObj.style.top = parseInt(master.style.height) - parseInt(imgObj.height)/2 - y;
+            return false;
+          }
+          angle = Math.atan(vy/vx);
+          initialVelocity = vx/Math.abs(vx) * Math.sqrt(vx*vx+vy*vy);
+          time = 0;
+          originX = x;
+          originY = y;
+          if(Math.round(vy)==0)
+          {
+            if(x >= parseInt(master.style.width)-parseInt(imgObj.width)/2)
+            {
+              initialVelocity *= -1;
+              angle = 0;
+              return null;
+            }
+            else if(x <= parseInt(imgObj.width)/2)
+              return false;
+          }
+        }
+        else if(x >= parseInt(master.style.width)-parseInt(imgObj.width)/2)
+        {
+          var vx = mu*(-initialVelocity * Math.cos(angle));
+          var vy = initialVelocity * Math.sin(angle) - g*time;
+          if(vx<=0)
+          {
+            angle = Math.atan(vy/vx);
+            initialVelocity = vy/Math.abs(vy) * Math.sqrt(vx*vx+vy*vy);
+            time = 0;
+            originX = x;
+            originY = y;
+          }
+          return null;
+        }
+        else if(x <= parseInt(imgObj.width)/2)
+        {
+          var vx = mu * (-initialVelocity * Math.cos(angle));
+          var vy = initialVelocity * Math.sin(angle) - g*time;
+          if(vx>=0)
+          {
+            angle = Math.atan(vy/vx);
+            initialVelocity = vy/Math.abs(vy) * Math.sqrt(vx*vx+vy*vy);
+            time = 0;
+            originX = x;
+            originY = y;
+          }
+          return null;
+        }
+      }
+      imgObj.style.left = x - parseInt(imgObj.width)/2;
+      imgObj.style.top = parseInt(master.style.height) - parseInt(imgObj.height)/2 - y;
+
+      var projectileCenterX = parseInt(projectile.style.left) + parseInt(projectile.width)/2;
+      var projectileCenterY = parseInt(projectile.style.top) + parseInt(projectile.height)/2;
+      var targetCenterX = parseInt(target.style.left) + parseInt(target.width)/2;
+      var targetCenterY = parseInt(target.style.top) + parseInt(target.height)/2;
+
+      if
+      (
+        Math.abs(targetCenterX-projectileCenterX) <= (parseInt(target.width)+parseInt(projectile.width))/2 - 10 &&
+        Math.abs(targetCenterY-projectileCenterY) <= (parseInt(target.height)+parseInt(projectile.height))/2 - 10
+      )
+      {
+        return true;
+      }
+
+      return null;
+    }
+    function randomizeTarget()
+    {
+      targetPosX = Math.round(parseInt(master.style.width) * (0.15 + Math.random()*0.85));
+      targetPosY = Math.round(parseInt(target.height)/2);
+      if(place(target,targetPosX,targetPosY)!=null)
+        randomizeTarget();
+      theta = 0;
+      moveTarget();
+    }
+    function moveTarget()
+    {
+      if(targetMoving==false)
+      {
+        targetMoving = true;
+        theta += direction;
+        targetPosY += direction;
+        var returnValue = place(target,targetPosX+100*Math.sin(theta*Math.PI/180),targetPosY);
+        if(returnValue==null)
+        {
+          setTimeout("moveTarget()",40);
+        }
+        else if(returnValue==false)
+        {
+          direction *= -1;
+          setTimeout("moveTarget()",0);
+        }
+        targetMoving = false;
+      }
+    }
+    function getMouseCoordinates()
+    {
+      var x = window.event.clientX;
+      var y = window.event.clientY;
+      if(x > parseInt(master.style.width)  || x < 0 ||
+        y > parseInt(master.style.height) || y < 0)
+        return;
+      y = parseInt(master.style.height) - y;
+      var initialVelocity = Math.round(Math.sqrt(x*x+y*y)/4);
+      var angle = Math.atan(y/x);
+      initvars.title = initialVelocity + ',' + angle;
+      initvars.innerHTML = 'Angle: ' + Math.round(angle * 180/Math.PI) + '<br>' + 'Speed: ' + initialVelocity;
+    }
+    function awaitProjection()
+    {
+      time = 0;
+      originX = projectile.width/2;
+      originY = projectile.height/2;
+      place(projectile,projectile.width/2,projectile.height/2);
+      score.innerHTML = '<span style="font-size:30pt;font-family:Courier New;">'+Math.round(success/(success+fail)*100)+'%</span><br>'+success+'/'+(success+fail);
+    }
+    function moveTime()
+    {
+      if(moving==true)
+      {
+        time += 0.025;
+        var x = Math.round(initialVelocity * Math.cos(angle) * time) + originX;
+        var y = Math.round(time * (initialVelocity * Math.sin(angle) - g/2 * time)) + originY;
+        var returnValue = place(projectile,x,y);
+        if(returnValue==true)
+        {
+          moving=false;
+          success++;
+          setTimeout("randomizeTarget()",500);
+          setTimeout("awaitProjection()",500);
+        }
+        else if(returnValue==false)
+        {
+          moving=false;
+          fail++;
+          setTimeout("awaitProjection()",500);
+        }
+        else
+        {
+          setTimeout("moveTime()",1);
+        }
+      }
+    }
+    function launch()
+    {
+      if(moving==false)
+      {
+        var arr = initvars.title.split(',');
+        initialVelocity = arr[0];
+        angle = arr[1];
+        moving=true;
+        moveTime();
+      }
+    }
+    function resizeDiv()
+    {
+      if(moving==false)
+      {
+        var x = window.event.clientX;
+        var y = window.event.clientY;
+        if(x<=master.style.width && y<=master.style.height)
+          return;
+        master.style.width = x;
+        master.style.height = y;
+        awaitProjection();
+        randomizeTarget();
+        window.scrollTo(master.style.width+10,master.style.height+10);
+      }
+    }
+  </script>
+</head>
+<body onclick="resizeDiv();">
+<div id="master" style="background-image:url(tile.png);background-repeat:repeat;position:absolute;" onmousemove="getMouseCoordinates();" onclick="launch();">
+  <img id="target" src="fly.png" style="position:absolute;left:0;top:0;width:50px;height:50px;"/>
+  <img id="projectile" src="ball.png" style="position:absolute;left:0;top:0;width:20px;height:20px;"/>
+  <div id="score" style="position:absolute;background-color:white;border-width:1px;border-style:solid;padding:3px;width:80px;left:20px;top:25px;text-align:center;"/>
+</div>
+<div id="initvars" style="position:absolute;background-color:white;border-width:1px;border-style:solid;padding:3px;width:80px;height:45px;left:20px;top:80px;text-align:center;display:none;"/>
+</body>
+</html>
